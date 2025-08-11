@@ -5,7 +5,14 @@ const N_ANTS = 100;
 
 window.onload = function() {
     console.log("new GPU");
-    const gpu = new GPU.GPU();
+    let gpu;
+    try {
+        gpu = new GPU();
+    } catch (error) {
+        console.error(error);
+        console.log("retrying new GPU...");
+        gpu = new GPU.GPU();
+    }
     // --------------------------------------------------
     console.log("adding GPU function: get");
     function get(cells, h, w, y, x) {
