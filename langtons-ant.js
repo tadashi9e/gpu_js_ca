@@ -5,7 +5,7 @@ const N_ANTS = 100;
 
 window.onload = function() {
     console.log("new GPU");
-    const gpu = new GPU();
+    const gpu = new GPU.GPU();
     // --------------------------------------------------
     console.log("adding GPU function: get");
     function get(cells, h, w, y, x) {
