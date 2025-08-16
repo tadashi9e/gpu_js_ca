@@ -9,6 +9,16 @@
     text-align: center;
     margin: 0;
   }
+  #parameters {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+  }
+  #settings {
+      display: grid;
+      grid-template-columns: auto auto auto auto;
+      padding: 20px;
+  }
   canvas {
     padding: 0;
     margin: 0;
@@ -16,6 +26,20 @@
 </style>
   </head>
   <body>
+    <div id="parameters">
+      Parameters
+      <div id="settings">
+        <span>A</span>
+        <span>:</span>
+        <input id="slider_a" type="range" min="0" max="800" step="50" value="450">
+        <span>[<span id="param_a">1</span>]</span>
+
+        <span>B</span>
+        <span>:</span>
+        <input id="slider_b" type="range" min="0" max="800" step="50" value="600">
+        <span>[<span id="param_b">4</span>]</span>
+      </div>
+    </div>
     <div id="gpu"></div>
     <div id="stat"></div>
   </body>

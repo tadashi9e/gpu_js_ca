@@ -3,6 +3,23 @@ const WIDTH = 800;
 const HEIGHT = 800;
 
 window.onload = function() {
+    // initialize param_a, param_b
+    let param_a = document.getElementById('slider_a').value / 50 - 8;
+    document.getElementById('param_a').textContent = param_a;
+    let param_b = document.getElementById('slider_b').value / 50 - 8;
+    document.getElementById('param_b').textContent = param_b;
+    // addEventListener to sliders
+    document.getElementById('slider_a').addEventListener(
+        'mouseup', function(event) {
+            param_a = this.value / 50 - 8;
+            document.getElementById('param_a').textContent = param_a;
+        });
+    document.getElementById('slider_b').addEventListener(
+        'mouseup', function(event) {
+            param_b = this.value / 50 - 8;
+            document.getElementById('param_b').textContent = param_b;
+        });
+
     console.log("new GPU");
     let gpu;
     try {
@@ -48,9 +65,8 @@ window.onload = function() {
           .setPipeline(true);
 
     console.log("creating kernel: rps");
-    const rps = gpu
-          .createKernel(
-        function(cells) {
+    const rps = gpu.createKernel(
+        function(cells, param_a, param_b) {
             const w = this.constants.width;
             const h = this.constants.height;
             const x = this.thread.x;
@@ -59,17 +75,23 @@ window.onload = function() {
             const p = count_if(cells, h, w, y, x, this.constants.ST_PAPER);
             const s = count_if(cells, h, w, y, x, this.constants.ST_SCISSORS);
             const center = get(cells, h, w, y, x);
-            if (p > s && p > r - 3 &&
-                (center == this.constants.ST_ROCK || center == 0)) {
+            const next_r =
+                  r > 0 && r > p - param_a && r > s - param_b &&
+                  (center == this.constants.ST_SCISSORS || center == 0);
+            const next_p =
+                  p > 0 && p > s - param_a  && p > r - param_b &&
+                  (center == this.constants.ST_ROCK || center == 0);
+            const next_s =
+                  s > 0 && s > r - param_a && s > p - param_b &&
+                  (center == this.constants.ST_PAPER || center == 0);
+            if (next_r && !next_p && !next_s) {
+                return this.constants.ST_ROCK;
+            }
+            if (next_p && !next_s && !next_r) {
                 return this.constants.ST_PAPER;
             }
-            if (s > r && s > p - 3 &&
-                (center == this.constants.ST_PAPER || center == 0)) {
+            if (next_s && !next_r && !next_p) {
                 return this.constants.ST_SCISSORS;
-            }
-            if (r > p && r > s - 3 &&
-                (center == this.constants.ST_SCISSORS || center == 0)) {
-                return this.constants.ST_ROCK;
             }
             return center;
         })
@@ -84,11 +106,11 @@ window.onload = function() {
         function(cells) {
             const cell = cells[this.thread.y][this.thread.x];
             if (cell == this.constants.ST_ROCK) {
-                this.color(0, 0, 1, 1);
+                this.color(1, 0, 0, 1);
             } else if (cell == this.constants.ST_PAPER) {
                 this.color(0, 1, 0, 1);
             } else if (cell == this.constants.ST_SCISSORS) {
-                this.color(1, 0, 0, 1);
+                this.color(0, 0, 1, 1);
             } else {
                 this.color(0, 0, 0, 1);
             }
@@ -122,7 +144,7 @@ window.onload = function() {
     console.log("start rendering...");
     let count = 0;
     function render_loop() {
-        cells = to_texture(rps(cells));
+        cells = to_texture(rps(cells, param_a, param_b));
         rps_render(cells);
         window.requestAnimationFrame(render_loop);
         count += 1;
