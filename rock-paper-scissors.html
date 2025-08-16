@@ -31,14 +31,15 @@
       <div id="settings">
         <span>A</span>
         <span>:</span>
-        <input id="slider_a" type="range" min="0" max="800" step="50" value="450">
+        <input id="slider_a" type="range" min="-8" max="8" step="1" value="1">
         <span>[<span id="param_a">1</span>]</span>
 
         <span>B</span>
         <span>:</span>
-        <input id="slider_b" type="range" min="0" max="800" step="50" value="600">
+        <input id="slider_b" type="range" min="-8" max="8" step="1" value="4">
         <span>[<span id="param_b">4</span>]</span>
       </div>
+      <input type="button" value="Restart" onclick="restart();">
     </div>
     <div id="gpu"></div>
     <div id="stat"></div>

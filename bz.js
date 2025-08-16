@@ -2,7 +2,35 @@
 const WIDTH = 800;
 const HEIGHT = 800;
 
+let prev_count = 0;
+let count = 0;
+
+var create_random_cells;
+
 window.onload = function() {
+    console.log("initializing sliders");
+    let param_a = Number(document.getElementById('slider_a').value);
+    let param_b = Number(document.getElementById('slider_b').value);
+    let param_c = Number(document.getElementById('slider_c').value);
+    document.getElementById('param_a').textContent = param_a;
+    document.getElementById('param_b').textContent = param_b;
+    document.getElementById('param_c').textContent = param_c;
+    document.getElementById('slider_a').addEventListener(
+        'input', function(event) {
+            param_a = Number(this.value);
+            document.getElementById('param_a').textContent = param_a;
+        });
+    document.getElementById('slider_b').addEventListener(
+        'input', function(event) {
+            param_b = Number(this.value);
+            document.getElementById('param_b').textContent = param_b;
+        });
+    document.getElementById('slider_c').addEventListener(
+        'input', function(event) {
+            param_c = Number(this.value);
+            document.getElementById('param_c').textContent = param_c;
+        });
+
     console.log("new GPU");
     let gpu;
     try {
@@ -53,7 +81,7 @@ window.onload = function() {
     gpu.addFunction(reaction);
 
     console.log("creating kernel: to_texture");
-    const to_texture = gpu.createKernel(
+    let to_texture = gpu.createKernel(
         function(data) {
             const x = this.thread.x;
             const y = this.thread.y;
@@ -89,8 +117,8 @@ window.onload = function() {
                 get(a, h, w, y, x),
                 get(b, h, w, y, x),
                 get(c, h, w, y, x),
-                get(param_a, h, w, y, x),
-                get(param_c, h, w, y, x));
+                param_a,
+                param_c);
         })
           .setConstants({width: WIDTH, height: HEIGHT})
           .setOutput([WIDTH, HEIGHT])
@@ -122,12 +150,18 @@ window.onload = function() {
         }
         return to_texture(spc);
     }
-    console.log("initializing: cell space a");
-    let a = create_random_center();
-    console.log("initializing: cell space b");
-    let b = create_random_center();
-    console.log("initializing: cell space c");
-    let c = create_random_center();
+    var a;
+    var b;
+    var c;
+    create_random_cells = function() {
+        console.log("initializing: cell space a");
+        a = create_random_center();
+        console.log("initializing: cell space b");
+        b = create_random_center();
+        console.log("initializing: cell space c");
+        c = create_random_center();
+    }
+    create_random_cells();
     function create_random(mid, dist) {
         let spc = [];
         for (let y = 0; y < HEIGHT; y++) {
@@ -140,20 +174,12 @@ window.onload = function() {
         }
         return to_texture(spc);
     }
-    console.log("initializing: param_a");
-    let param_a = create_random(1, 0.4);
-    console.log("initializing: param_b");
-    let param_b = create_random(0.8, 0.4);
-    console.log("initializing: param_c");
-    let param_c = create_random(0.8, 0.4);
-
     console.log("initializing: canvas setup & initial rendering");
     bz_render(a, b, c);
     const canvas = bz_render.canvas;
     document.getElementById("gpu").appendChild(canvas);
     // --------------------------------------------------
     console.log("start rendering...");
-    let count = 0;
     function render_loop() {
         let a2 = bz_diffusion(a, 0.9);
         let b2 = bz_diffusion(b, 0.9);
@@ -170,10 +196,14 @@ window.onload = function() {
     window.requestAnimationFrame(render_loop);
     // --------------------------------------------------
     console.log("start displaying fps...");
-    let prev_count = 0;
     setInterval(function() {
         document.getElementById("stat").textContent =
             'generation[' + count + ']: ' + (count - prev_count) + ' fps';
         prev_count = count;
     }, 1000);
 };
+function restart() {
+    create_random_cells();
+    prev_count = 0;
+    count = 0;
+}

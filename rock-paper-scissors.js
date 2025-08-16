@@ -2,21 +2,27 @@
 const WIDTH = 800;
 const HEIGHT = 800;
 
+let prev_count = 0;
+let count = 0;
+
+var create_random_cells;
+
 window.onload = function() {
+    console.log("initializing sliders");
     // initialize param_a, param_b
-    let param_a = document.getElementById('slider_a').value / 50 - 8;
+    let param_a = Number(document.getElementById('slider_a').value);
+    let param_b = Number(document.getElementById('slider_b').value);
     document.getElementById('param_a').textContent = param_a;
-    let param_b = document.getElementById('slider_b').value / 50 - 8;
     document.getElementById('param_b').textContent = param_b;
     // addEventListener to sliders
     document.getElementById('slider_a').addEventListener(
-        'mouseup', function(event) {
-            param_a = this.value / 50 - 8;
+        'input', function(event) {
+            param_a = Number(this.value);
             document.getElementById('param_a').textContent = param_a;
         });
     document.getElementById('slider_b').addEventListener(
-        'mouseup', function(event) {
-            param_b = this.value / 50 - 8;
+        'input', function(event) {
+            param_b = Number(this.value);
             document.getElementById('param_b').textContent = param_b;
         });
 
@@ -120,21 +126,28 @@ window.onload = function() {
           .setGraphical(true)
           .setOutput([WIDTH, HEIGHT]);
     // --------------------------------------------------
-    console.log("initializing: cell space");
-    let cells = [];
-    for (let y = 0; y < HEIGHT; y++) {
-        let line = [];
-        for (let x = 0; x < WIDTH; x++) {
-            if (x > WIDTH / 3 && x < 2 * WIDTH / 3 &&
-                y > HEIGHT / 3 && y < 2 * HEIGHT / 3) {
-                line.push(Math.floor(Math.random() * 4));
-            } else {
-                line.push(0);
+    var cells;
+    function create_random_center() {
+        let cells = [];
+        for (let y = 0; y < HEIGHT; y++) {
+            let line = [];
+            for (let x = 0; x < WIDTH; x++) {
+                if (x > WIDTH / 3 && x < 2 * WIDTH / 3 &&
+                    y > HEIGHT / 3 && y < 2 * HEIGHT / 3) {
+                    line.push(Math.floor(Math.random() * 4));
+                } else {
+                    line.push(0);
+                }
             }
+            cells.push(line);
         }
-        cells.push(line);
+        return to_texture(cells);
     }
-    cells = to_texture(cells);
+    create_random_cells = function() {
+        console.log("initializing: cell space");
+        cells = create_random_center();
+    }
+    create_random_cells();
 
     console.log("initializing: canvas setup & initial rendering");
     rps_render(cells);
@@ -142,7 +155,6 @@ window.onload = function() {
     document.getElementById("gpu").appendChild(canvas);
     // --------------------------------------------------
     console.log("start rendering...");
-    let count = 0;
     function render_loop() {
         cells = to_texture(rps(cells, param_a, param_b));
         rps_render(cells);
@@ -152,10 +164,15 @@ window.onload = function() {
     window.requestAnimationFrame(render_loop);
     // --------------------------------------------------
     console.log("start displaying fps...");
-    let prev_count = 0;
     setInterval(function() {
         document.getElementById("stat").textContent =
             'generation[' + count + ']: ' + (count - prev_count) + ' fps';
         prev_count = count;
     }, 1000);
 };
+
+function restart() {
+    prev_count = 0;
+    count = 0;
+    cells = create_random_cells();
+}
