@@ -82,13 +82,19 @@ window.onload = function() {
             const s = count_if(cells, h, w, y, x, this.constants.ST_SCISSORS);
             const center = get(cells, h, w, y, x);
             const next_r =
-                  r > 0 && r > p - param_a && r > s - param_b &&
+                  r > 0 &&
+                  (p <= 0 || r > p - param_a) &&
+                  (s <= 0 || r > s - param_b) &&
                   (center == this.constants.ST_SCISSORS || center == 0);
             const next_p =
-                  p > 0 && p > s - param_a  && p > r - param_b &&
+                  p > 0 &&
+                  (s <= 0 || p > s - param_a) &&
+                  (r <= 0 || p > r - param_b) &&
                   (center == this.constants.ST_ROCK || center == 0);
             const next_s =
-                  s > 0 && s > r - param_a && s > p - param_b &&
+                  s > 0 &&
+                  (r <= 0 || s > r - param_a) &&
+                  (p <= 0 || s > p - param_b) &&
                   (center == this.constants.ST_PAPER || center == 0);
             if (next_r && !next_p && !next_s) {
                 return this.constants.ST_ROCK;
