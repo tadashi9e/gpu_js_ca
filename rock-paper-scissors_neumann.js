@@ -1,4 +1,4 @@
-// Rock-Paper-Scissors
+// Rock-Paper-Scissors (von Neumann neighborhood)
 const WIDTH = 800;
 const HEIGHT = 800;
 
@@ -46,15 +46,17 @@ window.onload = function() {
     console.log("adding GPU function: count_if");
     function count_if(cells, h, w, y, x, state) {
         let n = 0;
-        for (let dy = -1; dy < 2; dy++) {
-            for (let dx = -1; dx < 2; dx++) {
-                if (dy != 0 || dx != 0) {
-                    const c = get(cells, h, w, y+dy, x+dx);
-                    if (c == state) {
-                        n += 1;
-                    }
-                }
-            }
+        if (get(cells, h, w, y-1, x) == state) {
+            n += 1;
+        }
+        if (get(cells, h, w, y+1, x) == state) {
+            n += 1;
+        }
+        if (get(cells, h, w, y, x-1) == state) {
+            n += 1;
+        }
+        if (get(cells, h, w, y, x+1) == state) {
+            n += 1;
         }
         return n;
     }

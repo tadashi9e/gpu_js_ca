@@ -1,4 +1,4 @@
-// Belousov–Zhabotinsky Reaction
+// Belousov–Zhabotinsky Reaction (von Neumann neighborhood)
 const WIDTH = 800;
 const HEIGHT = 800;
 
@@ -51,14 +51,10 @@ window.onload = function() {
 
     console.log("adding GPU function: average");
     function average(cells, h, w, y, x) {
-        return (get(cells, h, w, y-1, x-1) +
-                get(cells, h, w, y-1, x) +
-                get(cells, h, w, y-1, x+1) +
-                get(cells, h, w, y, x-1) +
-                get(cells, h, w, y, x+1) +
-                get(cells, h, w, y+1, x-1) +
+        return (get(cells, h, w, y-1, x) +
                 get(cells, h, w, y+1, x) +
-                get(cells, h, w, y+1, x+1)) / 8.0;
+                get(cells, h, w, y, x+1) +
+                get(cells, h, w, y, x-1)) / 4.0;
     }
     gpu.addFunction(average);
 

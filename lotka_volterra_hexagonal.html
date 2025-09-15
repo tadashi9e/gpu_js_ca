@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lotka–Volterra equations (Hexagonal lattice)</title>
+    <script src="gpu-browser.js"></script>
+    <script src="lotka_volterra_hexagonal.js"></script>
+<style>
+  body {
+    text-align: center;
+    margin: 0;
+  }
+  #parameters {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+  }
+  #settings {
+      display: grid;
+      grid-template-columns: auto auto auto auto;
+      padding: 20px;
+  }
+  canvas {
+    padding: 0;
+    margin: 0;
+  }
+</style>
+  </head>
+  <body>
+    <div id="parameters">
+      <img src="lotka_volterra_eq_2d.png">
+      <div id="settings">
+        <span>α</span>
+        <span>:</span>
+        <input id="slider_a" type="range" min="0" max="1" step="0.01" value="0.2">
+        <span>[<span id="param_a">0.2</span>]</span>
+
+        <span>β</span>
+        <span>:</span>
+        <input id="slider_b" type="range" min="0" max="1" step="0.01" value="0.9">
+        <span>[<span id="param_b">0.9</span>]</span>
+
+        <span>γ</span>
+        <span>:</span>
+        <input id="slider_c" type="range" min="0" max="1" step="0.01" value="0.4">
+        <span>[<span id="param_c">0.4</span>]</span>
+
+        <span>δ</span>
+        <span>:</span>
+        <input id="slider_d" type="range" min="0" max="1" step="0.01" value="0.9">
+        <span>[<span id="param_d">0.9</span>]</span>
+
+      </div>
+      <input type="button" value="Restart" onclick="restart();">
+    </div>
+    <div id="gpu"></div>
+    <div id="legend">
+      <span style="background-color:rgb(255,0,0);">(P) Predator</span>
+      <span style="background-color:rgb(0,255,0);">(V) Prey</span>
+    </div>
+    <div id="stat"></div>
+  </body>
+</html>

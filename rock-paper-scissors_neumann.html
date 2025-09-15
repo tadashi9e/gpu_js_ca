@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Rock-Paper-Scissors (Moore neighborhood)</title>
+    <title>Rock-Paper-Scissors (von Neumann neighborhood)</title>
     <script src="gpu-browser.js"></script>
-    <script src="rock-paper-scissors.js"></script>
+    <script src="rock-paper-scissors_neumann.js"></script>
 <style>
   body {
     text-align: center;
@@ -31,13 +31,13 @@
       <div id="settings">
         <span>A</span>
         <span>:</span>
-        <input id="slider_a" type="range" min="-8" max="8" step="1" value="1">
+        <input id="slider_a" type="range" min="-4" max="4" step="1" value="1">
         <span>[<span id="param_a">1</span>]</span>
 
         <span>B</span>
         <span>:</span>
-        <input id="slider_b" type="range" min="-8" max="8" step="1" value="4">
-        <span>[<span id="param_b">4</span>]</span>
+        <input id="slider_b" type="range" min="-4" max="4" step="1" value="3">
+        <span>[<span id="param_b">3</span>]</span>
       </div>
       <input type="button" value="Restart" onclick="restart();">
     </div>

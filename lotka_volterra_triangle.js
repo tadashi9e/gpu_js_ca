@@ -1,9 +1,10 @@
-// Belousov–Zhabotinsky Reaction
+// Lotka-Volterra equations
 const WIDTH = 800;
 const HEIGHT = 800;
 
 let prev_count = 0;
 let count = 0;
+let dt = 0.5;
 
 var create_random_cells;
 
@@ -12,9 +13,11 @@ window.onload = function() {
     let param_a = Number(document.getElementById('slider_a').value);
     let param_b = Number(document.getElementById('slider_b').value);
     let param_c = Number(document.getElementById('slider_c').value);
+    let param_d = Number(document.getElementById('slider_d').value);
     document.getElementById('param_a').textContent = param_a;
     document.getElementById('param_b').textContent = param_b;
     document.getElementById('param_c').textContent = param_c;
+    document.getElementById('param_d').textContent = param_d;
     document.getElementById('slider_a').addEventListener(
         'input', function(event) {
             param_a = Number(this.value);
@@ -29,6 +32,11 @@ window.onload = function() {
         'input', function(event) {
             param_c = Number(this.value);
             document.getElementById('param_c').textContent = param_c;
+        });
+    document.getElementById('slider_d').addEventListener(
+        'input', function(event) {
+            param_d = Number(this.value);
+            document.getElementById('param_d').textContent = param_d;
         });
 
     console.log("new GPU");
@@ -49,19 +57,6 @@ window.onload = function() {
     }
     gpu.addFunction(get);
 
-    console.log("adding GPU function: average");
-    function average(cells, h, w, y, x) {
-        return (get(cells, h, w, y-1, x-1) +
-                get(cells, h, w, y-1, x) +
-                get(cells, h, w, y-1, x+1) +
-                get(cells, h, w, y, x-1) +
-                get(cells, h, w, y, x+1) +
-                get(cells, h, w, y+1, x-1) +
-                get(cells, h, w, y+1, x) +
-                get(cells, h, w, y+1, x+1)) / 8.0;
-    }
-    gpu.addFunction(average);
-
     console.log("adding GPU function: limit");
     function limit(v) {
         if (v < 0.0) {
@@ -74,12 +69,6 @@ window.onload = function() {
     }
     gpu.addFunction(limit);
 
-    console.log("adding GPU function: reaction");
-    function reaction(a, b, c, param_a, param_c) {
-        return limit(a + a * (param_a * b - param_c * c));
-    }
-    gpu.addFunction(reaction);
-
     console.log("creating kernel: to_texture");
     let to_texture = gpu.createKernel(
         function(data) {
@@ -91,75 +80,78 @@ window.onload = function() {
           .setPipeline(true);
     to_texture.immutable = true;
 
-    console.log("creating kernel: bz_diffusion");
-    const bz_diffusion = gpu.createKernel(
-        function(src, rate) {
+    console.log("creating kernel: lv_reaction");
+    const lv_reaction_prey = gpu.createKernel(
+        function(prey, predator, dt, param_a, param_b) {
             const w = this.constants.width;
             const h = this.constants.height;
             const x = this.thread.x;
             const y = this.thread.y;
-            return (1.0 - rate) * get(src, h, w, y, x) +
-                rate * average(src, h, w, y, x);
+            const dy = (Math.floor((x+y) % 2) == 0) ? 1 : -1;
+            const a = (get(prey, h, w, y + dy, x) +
+                       get(prey, h, w, y, x - 1) +
+                       get(prey, h, w, y, x + 1)) / 3.0;
+            return limit(get(prey, h, w, y, x)
+                         + param_a * a * dt
+                         - param_b * a * get(predator, h, w, y, x) * dt);
         })
           .setConstants({width: WIDTH, height: HEIGHT})
           .setOutput([WIDTH, HEIGHT])
           .setPipeline(true);
-    bz_diffusion.immutable = true;
-
-    console.log("creating kernel: bz_reaction");
-    const bz_reaction = gpu.createKernel(
-        function(a, b, c, param_a, param_c) {
+    lv_reaction_prey.immutable = true;
+    const lv_reaction_predator = gpu.createKernel(
+        function(prey, predator, dt, param_c, param_d) {
             const w = this.constants.width;
             const h = this.constants.height;
             const x = this.thread.x;
             const y = this.thread.y;
-            return reaction(
-                get(a, h, w, y, x),
-                get(b, h, w, y, x),
-                get(c, h, w, y, x),
-                param_a,
-                param_c);
+            const X = get(prey, h, w, y, x);
+            const Y = get(predator, h, w, y, x);
+            const dy = (Math.floor((x+y) % 2) == 0) ? 1 : -1;
+            const b = (get(predator, h, w, y + dy, x) +
+                       get(predator, h, w, y, x - 1) +
+                       get(predator, h, w, y, x + 1)) / 3.0;
+            return limit(b
+                         - param_c * b * dt
+                         + param_d * get(prey, h, w, y, x) * b * dt);
         })
           .setConstants({width: WIDTH, height: HEIGHT})
           .setOutput([WIDTH, HEIGHT])
           .setPipeline(true);
-    bz_reaction.immutable = true;
+    lv_reaction_predator.immutable = true;
 
-    console.log("creating kernel: bz_render");
-    const bz_render = gpu.createKernel(
-        function(a, b, c) {
+    console.log("creating kernel: lv_render");
+    const lv_render = gpu.createKernel(
+        function(prey, predator) {
             const x = this.thread.x;
             const y = this.thread.y;
-            this.color(a[y][x], b[y][x], c[y][x], 1.0);
+            this.color(predator[y][x], prey[y][x], 0, 1.0);
         })
           .setGraphical(true)
           .setOutput([WIDTH, HEIGHT]);
     // --------------------------------------------------
-    function create_random_center() {
+    function create_random_center(ratio) {
         let spc = [];
         const r = Math.min(WIDTH, HEIGHT) / 3;
         for (let y = 0; y < HEIGHT; y++) {
             let line = [];
             for (let x = 0; x < WIDTH; x++) {
                 const v =
-                      ((x - WIDTH / 2)**2 + (y - HEIGHT / 2)**2 < r ** 2)
-                      ? Math.random() : 0.5;
+                      (((x - WIDTH / 2)**2 + (y - HEIGHT / 2)**2 < r ** 2) &&
+                       Math.random() < ratio) ? 1 : 0;
                 line.push(v);
             }
             spc.push(line);
         }
         return to_texture(spc);
     }
-    var a;
-    var b;
-    var c;
+    var prey;
+    var predator;
     create_random_cells = function() {
-        console.log("initializing: cell space a");
-        a = create_random_center();
-        console.log("initializing: cell space b");
-        b = create_random_center();
-        console.log("initializing: cell space c");
-        c = create_random_center();
+        console.log("initializing: cell space prey");
+        prey = create_random_center(0.5);
+        console.log("initializing: cell space predator");
+        predator = create_random_center(0.01);
     }
     create_random_cells();
     function create_random(mid, dist) {
@@ -175,21 +167,19 @@ window.onload = function() {
         return to_texture(spc);
     }
     console.log("initializing: canvas setup & initial rendering");
-    bz_render(a, b, c);
-    const canvas = bz_render.canvas;
+    lv_render(prey, predator);
+    const canvas = lv_render.canvas;
     document.getElementById("gpu").appendChild(canvas);
     // --------------------------------------------------
     console.log("start rendering...");
     function render_loop() {
-        let a2 = bz_diffusion(a, 0.9);
-        let b2 = bz_diffusion(b, 0.9);
-        let c2 = bz_diffusion(c, 0.9);
-        a.delete(); b.delete(); c.delete();
-        a = bz_reaction(a2, b2, c2, param_a, param_c);
-        b = bz_reaction(b2, c2, a2, param_b, param_a);
-        c = bz_reaction(c2, a2, b2, param_c, param_b);
-        a2.delete(); b2.delete(); c2.delete();
-        bz_render(a, b, c);
+        let prey2 = to_texture(prey);
+        let predator2 = to_texture(predator);
+        prey.delete(); predator.delete();
+        prey = lv_reaction_prey(prey2, predator2, dt, param_a, param_b);
+        predator = lv_reaction_predator(prey2, predator2, dt, param_c, param_d);
+        prey2.delete(); predator2.delete();
+        lv_render(prey, predator);
         window.requestAnimationFrame(render_loop);
         count += 1;
     }

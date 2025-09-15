@@ -51,14 +51,10 @@ window.onload = function() {
 
     console.log("adding GPU function: average");
     function average(cells, h, w, y, x) {
-        return (get(cells, h, w, y-1, x-1) +
-                get(cells, h, w, y-1, x) +
-                get(cells, h, w, y-1, x+1) +
-                get(cells, h, w, y, x-1) +
-                get(cells, h, w, y, x+1) +
-                get(cells, h, w, y+1, x-1) +
-                get(cells, h, w, y+1, x) +
-                get(cells, h, w, y+1, x+1)) / 8.0;
+        const dy = (Math.floor((x+y) % 2) == 0) ? 1 : -1;
+        return (get(cells, h, w, y + dy, x) +
+                get(cells, h, w, y, x - 1) +
+                get(cells, h, w, y, x + 1)) / 3.0;
     }
     gpu.addFunction(average);
 
