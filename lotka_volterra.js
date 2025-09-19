@@ -57,6 +57,19 @@ window.onload = function() {
     }
     gpu.addFunction(get);
 
+    console.log("adding GPU function: average");
+    function average(cells, h, w, y, x) {
+        return (get(cells, h, w, y-1, x-1) +
+                get(cells, h, w, y-1, x) +
+                get(cells, h, w, y-1, x+1) +
+                get(cells, h, w, y, x-1) +
+                get(cells, h, w, y, x+1) +
+                get(cells, h, w, y+1, x-1) +
+                get(cells, h, w, y+1, x) +
+                get(cells, h, w, y+1, x+1)) / 8.0;
+    }
+    gpu.addFunction(average);
+
     console.log("adding GPU function: limit");
     function limit(v) {
         if (v < 0.0) {
@@ -80,6 +93,21 @@ window.onload = function() {
           .setPipeline(true);
     to_texture.immutable = true;
 
+    console.log("creating kernel: lv_diffusion");
+    const lv_diffusion = gpu.createKernel(
+        function(src, rate) {
+            const w = this.constants.width;
+            const h = this.constants.height;
+            const x = this.thread.x;
+            const y = this.thread.y;
+            return (1.0 - rate) * get(src, h, w, y, x) +
+                rate * average(src, h, w, y, x);
+        })
+          .setConstants({width: WIDTH, height: HEIGHT})
+          .setOutput([WIDTH, HEIGHT])
+          .setPipeline(true);
+    lv_diffusion.immutable = true;
+
     console.log("creating kernel: lv_reaction");
     const lv_reaction_prey = gpu.createKernel(
         function(prey, predator, dt, param_a, param_b) {
@@ -87,30 +115,11 @@ window.onload = function() {
             const h = this.constants.height;
             const x = this.thread.x;
             const y = this.thread.y;
-            /*
-            const sq2 = 1.41421356;
-            let a =
-                get(prey, h, w, y - 1, x) +
-                get(prey, h, w, y, x - 1) +
-                get(prey, h, w, y, x + 1) +
-                get(prey, h, w, y + 1, x) +
-                (get(prey, h, w, y - 1, x - 1) +
-                 get(prey, h, w, y - 1, x + 1) +
-                 get(prey, h, w, y + 1, x - 1) +
-                 get(prey, h, w, y + 1, x + 1)) / sq2;
-                 a /= (4.0 + 4.0 / sq2);
-            */
-            const a = (get(prey, h, w, y - 1, x) +
-                       get(prey, h, w, y, x - 1) +
-                       get(prey, h, w, y, x + 1) +
-                       get(prey, h, w, y + 1, x) +
-                       get(prey, h, w, y - 1, x - 1) +
-                       get(prey, h, w, y - 1, x + 1) +
-                       get(prey, h, w, y + 1, x - 1) +
-                       get(prey, h, w, y + 1, x + 1)) / 8.0;
-            return limit(get(prey, h, w, y, x)
+            const a = get(prey, h, w, y, x);
+            const b = get(predator, h, w, y, x);
+            return limit(a
                          + param_a * a * dt
-                         - param_b * a * get(predator, h, w, y, x) * dt);
+                         - param_b * a * b * dt);
         })
           .setConstants({width: WIDTH, height: HEIGHT})
           .setOutput([WIDTH, HEIGHT])
@@ -122,32 +131,11 @@ window.onload = function() {
             const h = this.constants.height;
             const x = this.thread.x;
             const y = this.thread.y;
-            const X = get(prey, h, w, y, x);
-            const Y = get(predator, h, w, y, x);
-            /*
-            const sq2 = 1.41421356;
-            let b =
-                get(predator, h, w, y - 1, x) +
-                get(predator, h, w, y, x - 1) +
-                get(predator, h, w, y, x + 1) +
-                get(predator, h, w, y + 1, x) +
-                (get(predator, h, w, y - 1, x - 1) +
-                 get(predator, h, w, y - 1, x + 1) +
-                 get(predator, h, w, y + 1, x - 1) +
-                 get(predator, h, w, y + 1, x + 1)) / sq2;
-            b /= (4.0 + 4.0 / sq2);
-            */
-            const b = (get(predator, h, w, y - 1, x) +
-                       get(predator, h, w, y, x - 1) +
-                       get(predator, h, w, y, x + 1) +
-                       get(predator, h, w, y + 1, x) +
-                       get(predator, h, w, y - 1, x - 1) +
-                       get(predator, h, w, y - 1, x + 1) +
-                       get(predator, h, w, y + 1, x - 1) +
-                       get(predator, h, w, y + 1, x + 1)) / 8.0;
+            const a = get(prey, h, w, y, x);
+            const b = get(predator, h, w, y, x);
             return limit(b
                          - param_c * b * dt
-                         + param_d * get(prey, h, w, y, x) * b * dt);
+                         + param_d * a * b * dt);
         })
           .setConstants({width: WIDTH, height: HEIGHT})
           .setOutput([WIDTH, HEIGHT])
@@ -207,8 +195,8 @@ window.onload = function() {
     // --------------------------------------------------
     console.log("start rendering...");
     function render_loop() {
-        let prey2 = to_texture(prey);
-        let predator2 = to_texture(predator);
+        let prey2 = lv_diffusion(prey, 0.1);
+        let predator2 = lv_diffusion(predator, 0.1);
         prey.delete(); predator.delete();
         prey = lv_reaction_prey(prey2, predator2, dt, param_a, param_b);
         predator = lv_reaction_predator(prey2, predator2, dt, param_c, param_d);
