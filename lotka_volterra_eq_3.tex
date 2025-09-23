@@ -1,0 +1,21 @@
+\documentclass{article}
+\usepackage{amsmath}
+\pagestyle{empty}
+\begin{document}
+\[
+\frac{d}{d t} \mathbf{P} = \Pi_{[0,1]} \left( A \mathbf{P} + \mathbf{P} \odot \left( B \mathbf{P} \right) + D \nabla^2 \mathbf{P} \right)
+\]
+\[
+A = {diag}( + \alpha_1, - \alpha_2, - \alpha_3 )
+\]
+\[
+B = \begin{pmatrix}
+       0             & - \beta_{1 2}   & 0 \\
+       + \beta_{2 1} & 0               & - \beta_{2 3} \\
+       0             & + \beta_{3 2}   & 0
+ \end{pmatrix}
+\]
+\[
+     \mathbf{P} = \begin{pmatrix} P_1(x,y) \\ P_2(x,y) \\ P_3(x,y) \end{pmatrix}
+\]
+\end{document}

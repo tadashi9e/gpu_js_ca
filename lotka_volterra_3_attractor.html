@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lotka–Volterra equations attractor</title>
+    <script src="gpu-browser.js"></script>
+    <script src="lotka_volterra_3_attractor.js"></script>
+<style>
+  body {
+    text-align: center;
+    margin: 0;
+  }
+  #parameters {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+  }
+  #settings {
+      display: grid;
+      grid-template-columns: auto auto auto auto;
+      padding: 20px;
+  }
+  canvas {
+    padding: 10;
+    margin: 10;
+  }
+</style>
+  </head>
+  <body>
+    <div id="parameters">
+      <img src="lotka_volterra_eq_3.png">
+      <div id="settings">
+        <span>α1</span>
+        <span>:</span>
+        <input id="slider_a1" type="range" min="0" max="1" step="0.01" value="0.1">
+        <span>[<span id="param_a1">0.1</span>]</span>
+
+        <span>α2</span>
+        <span>:</span>
+        <input id="slider_a2" type="range" min="0" max="1" step="0.01" value="0.1">
+        <span>[<span id="param_a2">0.2</span>]</span>
+
+        <span>α3</span>
+        <span>:</span>
+        <input id="slider_a3" type="range" min="0" max="1" step="0.01" value="0.4">
+        <span>[<span id="param_a3">0.1</span>]</span>
+
+        <span>β12</span>
+        <span>:</span>
+        <input id="slider_b12" type="range" min="0" max="1" step="0.01" value="0.2">
+        <span>[<span id="param_b12">0.5</span>]</span>
+
+        <span>β21</span>
+        <span>:</span>
+        <input id="slider_b21" type="range" min="0" max="1" step="0.01" value="0.5">
+        <span>[<span id="param_b21">0.8</span>]</span>
+
+        <span>β23</span>
+        <span>:</span>
+        <input id="slider_b23" type="range" min="0" max="1" step="0.01" value="0.8">
+        <span>[<span id="param_b23">0.4</span>]</span>
+
+        <span>β32</span>
+        <span>:</span>
+        <input id="slider_b32" type="range" min="0" max="1" step="0.01" value="0.9">
+        <span>[<span id="param_b32">0.9</span>]</span>
+
+      </div>
+    </div>
+    <div>
+      <canvas id="plot" width="200" height="200" style="border:1px solid #000000;"></div>
+    </div>
+    <div id="legend">
+      <span style="background-color:rgb(0,255,0);">(P1) Plants</span>
+      <span style="background-color:rgb(0,0,255);">(P2) Plant-eaters</span>
+      <span style="background-color:rgb(255,0,0);">(P2) Meat-eaters</span>
+    </div>
+  </body>
+</html>
