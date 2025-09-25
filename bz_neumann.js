@@ -12,9 +12,13 @@ window.onload = function() {
     let param_a = Number(document.getElementById('slider_a').value);
     let param_b = Number(document.getElementById('slider_b').value);
     let param_c = Number(document.getElementById('slider_c').value);
+    let dt = Number(document.getElementById('slider_dt').value);
+    let D = Number(document.getElementById('slider_D').value);
     document.getElementById('param_a').textContent = param_a;
     document.getElementById('param_b').textContent = param_b;
     document.getElementById('param_c').textContent = param_c;
+    document.getElementById('param_dt').textContent = dt;
+    document.getElementById('param_D').textContent = D;
     document.getElementById('slider_a').addEventListener(
         'input', function(event) {
             param_a = Number(this.value);
@@ -29,6 +33,16 @@ window.onload = function() {
         'input', function(event) {
             param_c = Number(this.value);
             document.getElementById('param_c').textContent = param_c;
+        });
+    document.getElementById('slider_dt').addEventListener(
+        'input', function(event) {
+            dt = Number(this.value);
+            document.getElementById('param_dt').textContent = dt;
+        });
+    document.getElementById('slider_D').addEventListener(
+        'input', function(event) {
+            D = Number(this.value);
+            document.getElementById('param_D').textContent = D;
         });
 
     console.log("new GPU");
@@ -58,8 +72,8 @@ window.onload = function() {
     }
     gpu.addFunction(average);
 
-    console.log("adding GPU function: limit");
-    function limit(v) {
+    console.log("adding GPU function: clip");
+    function clip(v) {
         if (v < 0.0) {
             return 0.0;
         }
@@ -68,11 +82,11 @@ window.onload = function() {
         }
         return v;
     }
-    gpu.addFunction(limit);
+    gpu.addFunction(clip);
 
     console.log("adding GPU function: reaction");
-    function reaction(a, b, c, param_a, param_c) {
-        return limit(a + a * (param_a * b - param_c * c));
+    function reaction(a, b, c, dt, param_a, param_c) {
+        return clip(a + a * (param_a * b - param_c * c) * dt);
     }
     gpu.addFunction(reaction);
 
@@ -104,7 +118,7 @@ window.onload = function() {
 
     console.log("creating kernel: bz_reaction");
     const bz_reaction = gpu.createKernel(
-        function(a, b, c, param_a, param_c) {
+        function(a, b, c, dt, param_a, param_c) {
             const w = this.constants.width;
             const h = this.constants.height;
             const x = this.thread.x;
@@ -113,6 +127,7 @@ window.onload = function() {
                 get(a, h, w, y, x),
                 get(b, h, w, y, x),
                 get(c, h, w, y, x),
+                dt,
                 param_a,
                 param_c);
         })
@@ -177,13 +192,13 @@ window.onload = function() {
     // --------------------------------------------------
     console.log("start rendering...");
     function render_loop() {
-        let a2 = bz_diffusion(a, 0.9);
-        let b2 = bz_diffusion(b, 0.9);
-        let c2 = bz_diffusion(c, 0.9);
+        let a2 = bz_diffusion(a, D);
+        let b2 = bz_diffusion(b, D);
+        let c2 = bz_diffusion(c, D);
         a.delete(); b.delete(); c.delete();
-        a = bz_reaction(a2, b2, c2, param_a, param_c);
-        b = bz_reaction(b2, c2, a2, param_b, param_a);
-        c = bz_reaction(c2, a2, b2, param_c, param_b);
+        a = bz_reaction(a2, b2, c2, dt, param_a, param_c);
+        b = bz_reaction(b2, c2, a2, dt, param_b, param_a);
+        c = bz_reaction(c2, a2, b2, dt, param_c, param_b);
         a2.delete(); b2.delete(); c2.delete();
         bz_render(a, b, c);
         window.requestAnimationFrame(render_loop);

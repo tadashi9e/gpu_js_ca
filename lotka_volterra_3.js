@@ -4,8 +4,6 @@ const HEIGHT = 800;
 
 let prev_count = 0;
 let count = 0;
-let dt = 0.5;
-let D = 0.1;
 
 var create_random_cells;
 
@@ -18,6 +16,8 @@ window.onload = function() {
     let param_b21 = Number(document.getElementById('slider_b21').value);
     let param_b23 = Number(document.getElementById('slider_b23').value);
     let param_b32 = Number(document.getElementById('slider_b32').value);
+    let dt = Number(document.getElementById('slider_dt').value);
+    let D = Number(document.getElementById('slider_D').value);
     document.getElementById('param_a1').textContent = param_a1;
     document.getElementById('param_a2').textContent = param_a2;
     document.getElementById('param_a3').textContent = param_a3;
@@ -25,6 +25,8 @@ window.onload = function() {
     document.getElementById('param_b21').textContent = param_b21;
     document.getElementById('param_b23').textContent = param_b23;
     document.getElementById('param_b32').textContent = param_b32;
+    document.getElementById('param_dt').textContent = dt;
+    document.getElementById('param_D').textContent = D;
     document.getElementById('slider_a1').addEventListener(
         'input', function(event) {
             param_a = Number(this.value);
@@ -59,6 +61,16 @@ window.onload = function() {
         'input', function(event) {
             param_b32 = Number(this.value);
             document.getElementById('param_b32').textContent = param_b32;
+        });
+    document.getElementById('slider_dt').addEventListener(
+        'input', function(event) {
+            dt = Number(this.value);
+            document.getElementById('param_dt').textContent = dt;
+        });
+    document.getElementById('slider_D').addEventListener(
+        'input', function(event) {
+            D = Number(this.value);
+            document.getElementById('param_D').textContent = D;
         });
 
     console.log("new GPU");

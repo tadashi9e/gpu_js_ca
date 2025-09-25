@@ -4,7 +4,6 @@ const HEIGHT = 800;
 
 let prev_count = 0;
 let count = 0;
-let dt = 0.5;
 
 var create_random_cells;
 
@@ -14,10 +13,14 @@ window.onload = function() {
     let param_b = Number(document.getElementById('slider_b').value);
     let param_c = Number(document.getElementById('slider_c').value);
     let param_d = Number(document.getElementById('slider_d').value);
+    let dt = Number(document.getElementById('slider_dt').value);
+    let D = Number(document.getElementById('slider_D').value);
     document.getElementById('param_a').textContent = param_a;
     document.getElementById('param_b').textContent = param_b;
     document.getElementById('param_c').textContent = param_c;
     document.getElementById('param_d').textContent = param_d;
+    document.getElementById('param_dt').textContent = dt;
+    document.getElementById('param_D').textContent = D;
     document.getElementById('slider_a').addEventListener(
         'input', function(event) {
             param_a = Number(this.value);
@@ -37,6 +40,16 @@ window.onload = function() {
         'input', function(event) {
             param_d = Number(this.value);
             document.getElementById('param_d').textContent = param_d;
+        });
+    document.getElementById('slider_dt').addEventListener(
+        'input', function(event) {
+            dt = Number(this.value);
+            document.getElementById('param_dt').textContent = dt;
+        });
+    document.getElementById('slider_D').addEventListener(
+        'input', function(event) {
+            D = Number(this.value);
+            document.getElementById('param_D').textContent = D;
         });
 
     console.log("new GPU");
@@ -195,8 +208,8 @@ window.onload = function() {
     // --------------------------------------------------
     console.log("start rendering...");
     function render_loop() {
-        let prey2 = lv_diffusion(prey, 0.1);
-        let predator2 = lv_diffusion(predator, 0.1);
+        let prey2 = lv_diffusion(prey, D);
+        let predator2 = lv_diffusion(predator, D);
         prey.delete(); predator.delete();
         prey = lv_reaction_prey(prey2, predator2, dt, param_a, param_b);
         predator = lv_reaction_predator(prey2, predator2, dt, param_c, param_d);

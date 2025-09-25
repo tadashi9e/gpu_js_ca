@@ -34,9 +34,10 @@ function clip(vec) {
     return retv;
 }
 
-function rhs(p, a, b, dt) {
-    return [ a[0] * p[0] + p[0] * b[0][1] * p[1],
-             a[1] * p[1] + p[1] * b[1][0] * p[0] ];
+function rhs(p, a, dt) {
+    return [ a[0] * p[0] * p[1] - a[2] * p[0] * p[2],
+             a[1] * p[1] * p[2] - a[0] * p[1] * p[0],
+             a[2] * p[2] * p[0] - a[1] * p[2] * p[1] ];
 }
 function hex02(x) {
     let s = Math.ceil(x).toString(16);
@@ -46,38 +47,35 @@ function hex02(x) {
     return s;
 }
 function color_of(p) {
-    return "#" + hex02(p[1] * 255) + hex02(p[0] * 255) + "00";
+    return "#" + hex02(p[2] * 255) + hex02(p[0] * 255) + hex02(p[1] * 255);
 }
 
 window.onload = function() {
-    let p = [0.5, 0.5];
+    let p = [0.5, 0.5, 0.5];
     let loop = 0;
     console.log("initializing sliders");
     let param_a = Number(document.getElementById('slider_a').value);
     let param_b = Number(document.getElementById('slider_b').value);
     let param_c = Number(document.getElementById('slider_c').value);
-    let param_d = Number(document.getElementById('slider_d').value);
     let dt = Number(document.getElementById('slider_dt').value);
     let rk4 = document.getElementById('toggle_rk4').checked;
     function plot_loop() {
         var canvas = document.getElementById("plot");
         var ctx = canvas.getContext("2d");
-        let a = [param_a, -param_c];
-        let b = [[0,      -param_b],
-                 [param_d, 0]]
+        let a = [param_a, param_b, param_c];
         for (let n = 0; n < 100; ++n) {
             ctx.beginPath();
-            ctx.moveTo(p[0] * canvas.width, (1.0 - p[1]) * canvas.height);
+            ctx.moveTo(p[1] * canvas.width, (1.0 - p[2]) * canvas.height);
             if (rk4) {
-                k1 = rhs(p, a, b);
-                k2 = rhs(add(p, mult(0.5 * dt, k1)), a, b);
-                k3 = rhs(add(p, mult(0.5 * dt, k2)), a, b);
-                k4 = rhs(add(p, mult(dt, k3)), a, b);
+                k1 = rhs(p, a);
+                k2 = rhs(add(p, mult(0.5 * dt, k1)), a);
+                k3 = rhs(add(p, mult(0.5 * dt, k2)), a);
+                k4 = rhs(add(p, mult(dt, k3)), a);
                 p = clip(add(p, mult(dt / 6.0, sum(k1, mult(2.0, k2), mult(2.0, k3), k4))))
             } else {
-                p = clip(add(p, mult(dt, rhs(p, a, b, dt))));
+                p = clip(add(p, mult(dt, rhs(p, a))));
             }
-            ctx.lineTo(p[0] * canvas.width, (1.0 - p[1]) * canvas.height);
+            ctx.lineTo(p[1] * canvas.width, (1.0 - p[2]) * canvas.height);
             ctx.strokeStyle = color_of(p);
             ctx.stroke();
             if (loop > LOOP_MAX) {
@@ -88,7 +86,7 @@ window.onload = function() {
         window.requestAnimationFrame(plot_loop);
     }
     function replot() {
-        p = [0.5, 0.5];
+        p = [0.5, 0.5, 0.5];
         loop = 0;
         var canvas = document.getElementById("plot");
         var ctx = canvas.getContext("2d");
@@ -98,7 +96,6 @@ window.onload = function() {
     document.getElementById('param_a').textContent = param_a;
     document.getElementById('param_b').textContent = param_b;
     document.getElementById('param_c').textContent = param_c;
-    document.getElementById('param_d').textContent = param_d;
     document.getElementById('param_dt').textContent = dt;
     document.getElementById('param_rk4').textContent = rk4 ? "ON" : "OFF";
     document.getElementById('slider_a').addEventListener(
@@ -117,12 +114,6 @@ window.onload = function() {
         'input', function(event) {
             param_c = Number(this.value);
             document.getElementById('param_c').textContent = param_c;
-            replot();
-        });
-    document.getElementById('slider_d').addEventListener(
-        'input', function(event) {
-            param_d = Number(this.value);
-            document.getElementById('param_d').textContent = param_d;
             replot();
         });
     document.getElementById('slider_dt').addEventListener(

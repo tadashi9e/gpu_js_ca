@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Belousov–Zhabotinsky Reaction (Triangle)</title>
+    <title>Belousov–Zhabotinsky Reaction attractor</title>
     <script src="gpu-browser.js"></script>
-    <script src="bz_triangle.js"></script>
+    <script src="bz_attractor.js"></script>
 <style>
   body {
     text-align: center;
@@ -20,8 +20,8 @@
       padding: 20px;
   }
   canvas {
-    padding: 0;
-    margin: 0;
+    padding: 10;
+    margin: 10;
   }
 </style>
   </head>
@@ -46,23 +46,23 @@
 
         <span>dt</span>
         <span>:</span>
-        <input id="slider_dt" type="range" min="0.01" max="1" step="0.01" value="1.0">
-        <span>[<span id="param_dt">1.0</span>]</span>
+        <input id="slider_dt" type="range" min="0.01" max="1" step="0.01" value="0.5">
+        <span>[<span id="param_dt">0.5</span>]</span>
 
-        <span>D</span>
+        <span>RK4</span>
         <span>:</span>
-        <input id="slider_D" type="range" min="0" max="1" step="0.01" value="0.5">
-        <span>[<span id="param_D">0.5</span>]</span>
+        <input type="checkbox" id="toggle_rk4">
+        <span>[<span id="param_rk4">ON</span>]</span>
 
       </div>
-      <input type="button" value="Restart" onclick="restart();">
     </div>
-    <div id="gpu"></div>
+    <div>
+      <canvas id="plot" width="200" height="200" style="border:1px solid #000000;"></div>
+    </div>
     <div id="legend">
-      <span style="background-color:rgb(255,0,0);">A</span>
-      <span style="background-color:rgb(0,255,0);">B</span>
-      <span style="background-color:rgb(0,0,255);">C</span>
+      <span style="background-color:rgb(0,255,0);">(P1) Plants</span>
+      <span style="background-color:rgb(0,0,255);">(P2) Plant-eaters</span>
+      <span style="background-color:rgb(255,0,0);">(P2) Meat-eaters</span>
     </div>
-    <div id="stat"></div>
   </body>
 </html>
