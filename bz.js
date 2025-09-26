@@ -196,9 +196,9 @@ window.onload = function() {
     // --------------------------------------------------
     console.log("start rendering...");
     function render_loop() {
-        let a2 = bz_diffusion(a, D);
-        let b2 = bz_diffusion(b, D);
-        let c2 = bz_diffusion(c, D);
+        let a2 = bz_diffusion(a, D * dt);
+        let b2 = bz_diffusion(b, D * dt);
+        let c2 = bz_diffusion(c, D * dt);
         a.delete(); b.delete(); c.delete();
         a = bz_reaction(a2, b2, c2, dt, param_a, param_c);
         b = bz_reaction(b2, c2, a2, dt, param_b, param_a);

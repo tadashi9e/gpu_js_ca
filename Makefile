@@ -1,7 +1,12 @@
-all: lotka_volterra_eq_2d.png lotka_volterra_eq_3.png
+all: bz_eq.png lotka_volterra_eq_2d.png lotka_volterra_eq_3.png
 
 clean:
-	rm -f lotka_volterra_eq_2d.png lotka_volterra_eq_3.png
+	rm -f bz_eq.png lotka_volterra_eq_2d.png lotka_volterra_eq_3.png
+
+bz_eq.png: bz_eq.tex
+	latex2png -g bz_eq.tex
+	convert bz_eq.png -resize 40% bz_eq.tmp.png
+	mv bz_eq.tmp.png bz_eq.png
 
 lotka_volterra_eq_2d.png: lotka_volterra_eq_2d.tex
 	latex2png -g lotka_volterra_eq_2d.tex

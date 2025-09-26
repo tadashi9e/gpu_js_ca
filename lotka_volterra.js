@@ -208,8 +208,8 @@ window.onload = function() {
     // --------------------------------------------------
     console.log("start rendering...");
     function render_loop() {
-        let prey2 = lv_diffusion(prey, D);
-        let predator2 = lv_diffusion(predator, D);
+        let prey2 = lv_diffusion(prey, D * dt);
+        let predator2 = lv_diffusion(predator, D * dt);
         prey.delete(); predator.delete();
         prey = lv_reaction_prey(prey2, predator2, dt, param_a, param_b);
         predator = lv_reaction_predator(prey2, predator2, dt, param_c, param_d);

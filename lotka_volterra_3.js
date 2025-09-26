@@ -251,9 +251,9 @@ window.onload = function() {
     // --------------------------------------------------
     console.log("start rendering...");
     function render_loop() {
-        let green2 = lv_diffusion(green, D);
-        let prey2 = lv_diffusion(prey, D);
-        let predator2 = lv_diffusion(predator, D);
+        let green2 = lv_diffusion(green, D * dt);
+        let prey2 = lv_diffusion(prey, D * dt);
+        let predator2 = lv_diffusion(predator, D * dt);
         green.delete(); prey.delete(); predator.delete();
         green = lv_reaction_green(green2, prey2, dt,
                                   param_a1, param_b12);
