@@ -18,6 +18,7 @@ window.onload = function() {
     let param_b32 = Number(document.getElementById('slider_b32').value);
     let dt = Number(document.getElementById('slider_dt').value);
     let D = Number(document.getElementById('slider_D').value);
+    let rk4 = document.getElementById('toggle_rk4').checked;
     document.getElementById('param_a1').textContent = param_a1;
     document.getElementById('param_a2').textContent = param_a2;
     document.getElementById('param_a3').textContent = param_a3;
@@ -27,6 +28,7 @@ window.onload = function() {
     document.getElementById('param_b32').textContent = param_b32;
     document.getElementById('param_dt').textContent = dt;
     document.getElementById('param_D').textContent = D;
+    document.getElementById('param_rk4').textContent = rk4 ? "ON" : "OFF";
     document.getElementById('slider_a1').addEventListener(
         'input', function(event) {
             param_a = Number(this.value);
@@ -71,6 +73,11 @@ window.onload = function() {
         'input', function(event) {
             D = Number(this.value);
             document.getElementById('param_D').textContent = D;
+        });
+    document.getElementById('toggle_rk4').addEventListener(
+        'input', function(event) {
+            rk4 = this.checked;
+            document.getElementById('param_rk4').textContent = rk4 ? "ON" : "OFF";
         });
 
     console.log("new GPU");
@@ -143,24 +150,22 @@ window.onload = function() {
     lv_diffusion.immutable = true;
 
     console.log("creating kernel: lv_reaction");
-    const lv_reaction_green = gpu.createKernel(
-        function(green, prey, dt, param_a1, param_b12) {
+    const lv_rhs_green = gpu.createKernel(
+        function(green, prey, param_a1, param_b12) {
             const w = this.constants.width;
             const h = this.constants.height;
             const x = this.thread.x;
             const y = this.thread.y;
             const a = get(green, h, w, y, x);
             const b = get(prey, h, w, y, x);
-            return limit(a
-                         + param_a1 * a * dt
-                         - param_b12 * a * b * dt);
+            return param_a1 * a - param_b12 * a * b;
         })
           .setConstants({width: WIDTH, height: HEIGHT})
           .setOutput([WIDTH, HEIGHT])
           .setPipeline(true);
-    lv_reaction_green.immutable = true;
-    const lv_reaction_prey = gpu.createKernel(
-        function(green, prey, predator, dt, param_a2, param_b21, param_b23) {
+    lv_rhs_green.immutable = true;
+    const lv_rhs_prey = gpu.createKernel(
+        function(green, prey, predator, param_a2, param_b21, param_b23) {
             const w = this.constants.width;
             const h = this.constants.height;
             const x = this.thread.x;
@@ -168,31 +173,39 @@ window.onload = function() {
             const a = get(green, h, w, y, x);
             const b = get(prey, h, w, y, x);
             const c = get(predator, h, w, y, x);
-            return limit(b
-                         - param_a2 * b * dt
-                         + param_b21 * a * b * dt
-                         - param_b23 * c * b * dt);
+            return - param_a2 * b + param_b21 * a * b - param_b23 * c * b;
         })
           .setConstants({width: WIDTH, height: HEIGHT})
           .setOutput([WIDTH, HEIGHT])
           .setPipeline(true);
-    lv_reaction_prey.immutable = true;
-    const lv_reaction_predator = gpu.createKernel(
-        function(prey, predator, dt, param_a3, param_b32) {
+    lv_rhs_prey.immutable = true;
+    const lv_rhs_predator = gpu.createKernel(
+        function(prey, predator, param_a3, param_b32) {
             const w = this.constants.width;
             const h = this.constants.height;
             const x = this.thread.x;
             const y = this.thread.y;
             const a = get(prey, h, w, y, x);
             const b = get(predator, h, w, y, x);
-            return limit(b
-                         - param_a3 * b * dt
-                         + param_b32 * a * b * dt);
+            return - param_a3 * b + param_b32 * a * b;
         })
           .setConstants({width: WIDTH, height: HEIGHT})
           .setOutput([WIDTH, HEIGHT])
           .setPipeline(true);
-    lv_reaction_predator.immutable = true;
+    lv_rhs_predator.immutable = true;
+    console.log("creating kernel: lv_addmul");
+    const lv_addmul = gpu.createKernel(
+        function (a, b, dt) {
+            const w = this.constants.width;
+            const h = this.constants.height;
+            const x = this.thread.x;
+            const y = this.thread.y;
+            return limit(get(a, h, w, y, x) + get(b, h, w, y, x) * dt);
+        })
+          .setConstants({width: WIDTH, height: HEIGHT})
+          .setOutput([WIDTH, HEIGHT])
+          .setPipeline(true);
+    lv_addmul.immutable = true;
 
     console.log("creating kernel: lv_render");
     const lv_render = gpu.createKernel(
@@ -212,7 +225,7 @@ window.onload = function() {
             for (let x = 0; x < WIDTH; x++) {
                 const v =
                       (((x - WIDTH / 2)**2 + (y - HEIGHT / 2)**2 < r ** 2) &&
-                       Math.random() < ratio) ? 1 : 0;
+                      Math.random() < ratio) ? 1 : 0;
                 line.push(v);
             }
             spc.push(line);
@@ -255,13 +268,82 @@ window.onload = function() {
         let prey2 = lv_diffusion(prey, D * dt);
         let predator2 = lv_diffusion(predator, D * dt);
         green.delete(); prey.delete(); predator.delete();
-        green = lv_reaction_green(green2, prey2, dt,
-                                  param_a1, param_b12);
-        prey = lv_reaction_prey(green2, prey2, predator2, dt,
-                                param_a2, param_b21, param_b23);
-        predator = lv_reaction_predator(prey2, predator2, dt,
-                                        param_a3, param_b32);
-        green2.delete(); prey2.delete(); predator2.delete();
+        if (rk4) {
+            k1_green = lv_rhs_green(green2, prey2,
+                                    param_a1, param_b12);
+            k1_prey = lv_rhs_prey(green2, prey2, predator2,
+                                  param_a2, param_b21, param_b23);
+            k1_predator = lv_rhs_predator(prey2, predator2,
+                                          param_a3, param_b32);
+            green = lv_addmul(green2, k1_green, 0.5 * dt);
+            prey = lv_addmul(prey2, k1_prey, 0.5 * dt);
+            predator = lv_addmul(predator2, k1_predator, 0.5 * dt);
+
+            k2_green = lv_rhs_green(green, prey,
+                                    param_a1, param_b12);
+            k2_prey = lv_rhs_prey(green, prey, predator,
+                                  param_a2, param_b21, param_b23);
+            k2_predator = lv_rhs_predator(prey, predator,
+                                          param_a3, param_b32);
+            green.delete(); prey.delete(); predator.delete();
+            green = lv_addmul(green2, k2_green, 0.5 * dt);
+            prey = lv_addmul(prey2, k2_prey, 0.5 * dt);
+            predator = lv_addmul(predator2, k2_predator, 0.5 * dt);
+
+            k3_green = lv_rhs_green(green, prey,
+                                    param_a1, param_b12);
+            k3_prey = lv_rhs_prey(green, prey, predator,
+                                  param_a2, param_b21, param_b23);
+            k3_predator = lv_rhs_predator(prey, predator,
+                                          param_a3, param_b32);
+            green.delete(); prey.delete(); predator.delete();
+            green = lv_addmul(green2, k3_green, dt);
+            prey = lv_addmul(prey2, k3_prey, dt);
+            predator = lv_addmul(predator2, k3_predator, dt);
+
+            k4_green = lv_rhs_green(green, prey,
+                                    param_a1, param_b12);
+            k4_prey = lv_rhs_prey(green, prey, predator,
+                                  param_a2, param_b21, param_b23);
+            k4_predator = lv_rhs_predator(prey, predator,
+                                          param_a3, param_b32);
+            green.delete(); prey.delete(); predator.delete();
+            green = lv_addmul(green2, k1_green, dt / 6.0);
+            prey = lv_addmul(prey2, k1_prey, dt / 6.0);
+            predator = lv_addmul(predator2, k1_predator, dt / 6.0);
+            k1_green.delete(); k1_prey.delete(); k1_predator.delete();
+            green2.delete(); prey2.delete(); predator2.delete();
+            green2 = lv_addmul(green, k2_green, dt / 3.0);
+            prey2 = lv_addmul(prey, k2_prey, dt / 3.0);
+            predator2 = lv_addmul(predator, k2_predator, dt / 3.0);
+            k2_green.delete(); k2_prey.delete(); k2_predator.delete();
+            green.delete(); prey.delete(); predator.delete();
+            green = lv_addmul(green2, k3_green, dt / 3.0);
+            prey = lv_addmul(prey2, k3_prey, dt / 3.0);
+            predator = lv_addmul(predator2, k3_predator, dt / 3.0);
+            k3_green.delete(); k3_prey.delete(); k3_predator.delete();
+            green2.delete(); prey2.delete(); predator2.delete();
+            green2 = lv_addmul(green, k4_green, dt / 6.0);
+            prey2 = lv_addmul(prey, k4_prey, dt / 6.0);
+            predator2 = lv_addmul(predator, k4_predator, dt / 6.0);
+            k4_green.delete(); k4_prey.delete(); k4_predator.delete();
+            green.delete(); prey.delete(); predator.delete();
+            green = green2;
+            prey = prey2;
+            predator = predator2;
+        } else {
+            k1_green = lv_rhs_green(green2, prey2,
+                                    param_a1, param_b12);
+            k1_prey = lv_rhs_prey(green2, prey2, predator2,
+                                  param_a2, param_b21, param_b23);
+            k1_predator = lv_rhs_predator(prey2, predator2,
+                                          param_a3, param_b32);
+            green = lv_addmul(green2, k1_green, dt);
+            prey = lv_addmul(prey2, k1_prey, dt);
+            predator = lv_addmul(predator2, k1_predator, dt);
+            k1_green.delete(); k1_prey.delete(); k1_predator.delete();
+            green2.delete(); prey2.delete(); predator2.delete();
+        }
         lv_render(green, prey, predator);
         window.requestAnimationFrame(render_loop);
         count += 1;

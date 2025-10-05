@@ -34,7 +34,7 @@ function clip(vec) {
     return retv;
 }
 
-function rhs(p, a, b, dt) {
+function rhs(p, a, b) {
     return [ a[0] * p[0] + p[0] * (b[0][1] * p[1] + b[0][2] * p[2]),
              a[1] * p[1] + p[1] * (b[1][0] * p[0] + b[1][2] * p[2]),
              a[2] * p[2] + p[2] * (b[2][0] * p[0] + b[2][1] * p[1]) ];

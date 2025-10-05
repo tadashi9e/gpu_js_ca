@@ -37,27 +37,27 @@
         <span>α2</span>
         <span>:</span>
         <input id="slider_a2" type="range" min="0" max="1" step="0.01" value="0.1">
-        <span>[<span id="param_a2">0.2</span>]</span>
+        <span>[<span id="param_a2">0.1</span>]</span>
 
         <span>α3</span>
         <span>:</span>
         <input id="slider_a3" type="range" min="0" max="1" step="0.01" value="0.4">
-        <span>[<span id="param_a3">0.1</span>]</span>
+        <span>[<span id="param_a3">0.4</span>]</span>
 
         <span>β12</span>
         <span>:</span>
         <input id="slider_b12" type="range" min="0" max="1" step="0.01" value="0.2">
-        <span>[<span id="param_b12">0.5</span>]</span>
+        <span>[<span id="param_b12">0.2</span>]</span>
 
         <span>β21</span>
         <span>:</span>
         <input id="slider_b21" type="range" min="0" max="1" step="0.01" value="0.5">
-        <span>[<span id="param_b21">0.8</span>]</span>
+        <span>[<span id="param_b21">0.5</span>]</span>
 
         <span>β23</span>
         <span>:</span>
         <input id="slider_b23" type="range" min="0" max="1" step="0.01" value="0.8">
-        <span>[<span id="param_b23">0.4</span>]</span>
+        <span>[<span id="param_b23">0.8</span>]</span>
 
         <span>β32</span>
         <span>:</span>
@@ -71,8 +71,13 @@
 
         <span>D</span>
         <span>:</span>
-        <input id="slider_D" type="range" min="0" max="1" step="0.01" value="1.0">
-        <span>[<span id="param_D">1.0</span>]</span>
+        <input id="slider_D" type="range" min="0" max="1" step="0.01" value="0.1">
+        <span>[<span id="param_D">0.1</span>]</span>
+
+        <span>RK4</span>
+        <span>:</span>
+        <input type="checkbox" id="toggle_rk4">
+        <span>[<span id="param_rk4">ON</span>]</span>
 
       </div>
       <input type="button" value="Restart" onclick="restart();">
